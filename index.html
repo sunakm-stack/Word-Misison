@@ -1,71 +1,515 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8">
-<title>Word Mission Game</title>
-<style>
-body { font-family: Arial; background:#111827; color:white; text-align:center; }
-button { padding:10px 20px; margin:10px; font-size:18px; cursor:pointer; }
-.hidden { display:none; }
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Word Mission Game 120 (Stable)</title>
+  <style>
+    :root{
+      --bg:#0b1020; --card:#121a33; --text:#eef2ff; --muted:#a9b1d6;
+      --line:#27335f; --accent:#7aa2f7; --good:#9ece6a; --bad:#f7768e; --warn:#e0af68;
+      --shadow:0 10px 30px rgba(0,0,0,.35); --r:18px;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,"Noto Sans KR","Apple SD Gothic Neo",Arial,sans-serif;
+    }
+    body{margin:0;background:radial-gradient(1200px 600px at 20% 0%,#1a2550,var(--bg));color:var(--text);}
+    .wrap{max-width:980px;margin:0 auto;padding:22px;}
+    header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;}
+    .brand{display:flex;align-items:center;gap:12px;}
+    .logo{width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,var(--accent),#bb9af7);box-shadow:var(--shadow);}
+    h1{font-size:18px;margin:0;line-height:1.2;}
+    .sub{color:var(--muted);font-size:13px;margin-top:4px;}
+    .pill{font-size:12px;padding:6px 10px;border:1px solid var(--line);border-radius:999px;color:var(--muted);background:rgba(255,255,255,.04);}
+    .row{display:flex;gap:16px;flex-wrap:wrap;}
+    .card{background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.02));border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);}
+    .pad{padding:18px;}
+    .grow{flex:1 1 520px;}
+    .side{flex:1 1 260px;}
+    .big{font-size:22px;font-weight:850;letter-spacing:-.02em;}
+    .muted{color:var(--muted);}
+    .small{font-size:12px;line-height:1.55;}
+    label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px;}
+    input{width:100%;padding:12px 12px;border-radius:14px;border:1px solid var(--line);background:rgba(0,0,0,.25);color:var(--text);outline:none;}
+    .btn{cursor:pointer;border:none;border-radius:14px;padding:12px 14px;font-weight:750;color:var(--text);
+         background:rgba(255,255,255,.08);border:1px solid var(--line);}
+    .btn:hover{filter:brightness(1.05);}
+    .btn.primary{background:linear-gradient(135deg,var(--accent),#bb9af7);border:none;}
+    .btn.good{background:rgba(158,206,106,.15);border:1px solid rgba(158,206,106,.35);}
+    .btn.bad{background:rgba(247,118,142,.15);border:1px solid rgba(247,118,142,.35);}
+    .btn.warn{background:rgba(224,175,104,.16);border:1px solid rgba(224,175,104,.35);}
+    .hr{height:1px;background:var(--line);margin:14px 0;}
+    .hud{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px;}
+    .meter{height:10px;background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:999px;overflow:hidden;min-width:220px;}
+    .bar{height:100%;width:0%;background:linear-gradient(90deg,var(--accent),#bb9af7);}
+    .qtext{font-size:16px;line-height:1.55;white-space:pre-wrap;}
+    .grid4{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}
+    @media (min-width:760px){.grid4{grid-template-columns:repeat(4,1fr);}}
+    .choice{text-align:left;}
+    .tagrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;}
+    .tag{font-size:11px;padding:6px 10px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--muted);}
+    .map{display:grid;grid-template-columns:1fr;gap:12px;}
+    @media (min-width:760px){.map{grid-template-columns:repeat(3,1fr);}}
+    .node{padding:14px;border-radius:16px;border:1px solid var(--line);background:rgba(0,0,0,.20);}
+    .node.locked{opacity:.55;}
+    .node h3{margin:0 0 4px 0;}
+    .node .desc{color:var(--muted);font-size:12px;line-height:1.35;}
+    .footer{margin-top:18px;color:var(--muted);font-size:12px;line-height:1.55;}
+  </style>
 </head>
 <body>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <div class="logo" aria-hidden="true"></div>
+      <div>
+        <h1>Word Mission Game 120 (Stable)</h1>
+        <div class="sub">ROOKIE → EXPLORER → MASTER · 120문항 · 오류 없는 안정 버전</div>
+      </div>
+    </div>
+    <div class="pill" id="statusPill">Ready</div>
+  </header>
 
-<h1>Word Mission Game</h1>
-<button id="startBtn">🚀 게임 시작</button>
+  <div id="app"></div>
 
-<div id="game" class="hidden">
-  <h2 id="question"></h2>
-  <div id="choices"></div>
+  <div class="footer">
+    <div>✅ 이 버전은 “안정 우선”으로 설계되어 있습니다. (구글시트 자동 수집은 다음 단계에서 깨끗하게 붙입니다.)</div>
+    <div>✅ GitHub Pages에서 수정 후 반영이 늦으면 <b>Ctrl+Shift+R</b> 또는 시크릿 창으로 확인하세요.</div>
+  </div>
 </div>
 
 <script>
-const questions = [
-  {q:"rain의 뜻은?", choices:["비","눈","바람","구름"], answer:0},
-  {q:"eat의 뜻은?", choices:["걷다","먹다","읽다","보다"], answer:1},
-  {q:"walk의 뜻은?", choices:["걷다","달리다","앉다","자다"], answer:0}
-];
+/* ===============================
+   0) 데이터: 120 단어(영-한)
+   - 수업용 기본어휘 중심, 중1 수준
+   =============================== */
+const WORDS = [
+  ["rain","비"],["snow","눈"],["wind","바람"],["cloud","구름"],["sun","태양"],["sky","하늘"],["water","물"],["river","강"],["sea","바다"],["mountain","산"],
+  ["tree","나무"],["flower","꽃"],["leaf","잎"],["grass","풀"],["stone","돌"],["fire","불"],["ice","얼음"],["air","공기"],["earth","땅"],["star","별"],
+  ["book","책"],["pen","펜"],["pencil","연필"],["paper","종이"],["bag","가방"],["desk","책상"],["chair","의자"],["classroom","교실"],["school","학교"],["teacher","선생님"],
+  ["student","학생"],["friend","친구"],["family","가족"],["mother","엄마"],["father","아빠"],["sister","여동생/언니"],["brother","남동생/오빠"],["baby","아기"],["name","이름"],["age","나이"],
+  ["time","시간"],["day","날"],["week","주"],["month","달"],["year","년"],["today","오늘"],["tomorrow","내일"],["yesterday","어제"],["morning","아침"],["night","밤"],
+  ["eat","먹다"],["drink","마시다"],["sleep","자다"],["walk","걷다"],["run","달리다"],["jump","뛰다"],["sit","앉다"],["stand","서다"],["open","열다"],["close","닫다"],
+  ["read","읽다"],["write","쓰다"],["listen","듣다"],["speak","말하다"],["study","공부하다"],["teach","가르치다"],["learn","배우다"],["play","놀다/하다"],["make","만들다"],["help","돕다"],
+  ["go","가다"],["come","오다"],["leave","떠나다"],["arrive","도착하다"],["meet","만나다"],["visit","방문하다"],["call","전화하다"],["use","사용하다"],["find","찾다"],["keep","보관하다/유지하다"],
+  ["good","좋은"],["bad","나쁜"],["big","큰"],["small","작은"],["long","긴"],["short","짧은"],["new","새로운"],["old","오래된"],["hot","뜨거운"],["cold","차가운"],
+  ["happy","행복한"],["sad","슬픈"],["angry","화난"],["tired","피곤한"],["hungry","배고픈"],["thirsty","목마른"],["busy","바쁜"],["free","한가한/자유로운"],["easy","쉬운"],["difficult","어려운"],
+  ["fast","빠른"],["slow","느린"],["early","이른"],["late","늦은"],["beautiful","아름다운"],["kind","친절한"],["smart","똑똑한"],["strong","강한"],["weak","약한"],["clean","깨끗한"],
+  ["home","집"],["room","방"],["door","문"],["window","창문"],["street","거리"],["city","도시"],["country","나라"],["store","가게"],["market","시장"],["hospital","병원"]
+]; // 총 120쌍
 
-let current = 0;
+/* ===============================
+   1) 유틸
+   =============================== */
+const $ = (id)=>document.getElementById(id);
+function shuffle(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+function setStatus(t){ $("statusPill").textContent=t; }
+function clamp(n,a,b){ return Math.max(a, Math.min(b,n)); }
+function norm(s){ return String(s||"").trim().toLowerCase().replace(/\s+/g," "); }
 
-const startBtn = document.getElementById("startBtn");
-const game = document.getElementById("game");
-const questionEl = document.getElementById("question");
-const choicesEl = document.getElementById("choices");
+/* ===============================
+   2) 120문항 생성 로직
+   - Rookie(1~40): 뜻 고르기(4지선다)
+   - Explorer(41~80): 문맥 의미 추론(4지선다)
+   - Master(81~120): 단답형(영단어 1개)
+   =============================== */
+function makeChoices(correctIndex, pool, getText){
+  // correctIndex: pool의 인덱스
+  const correct = pool[correctIndex];
+  const others = [];
+  while(others.length<3){
+    const r = Math.floor(Math.random()*pool.length);
+    if(r===correctIndex) continue;
+    if(others.includes(r)) continue;
+    others.push(r);
+  }
+  const choiceIdx = shuffle([correctIndex, ...others]);
+  const choices = choiceIdx.map(i=>getText(pool[i]));
+  const answer = choiceIdx.indexOf(correctIndex);
+  return {choices, answer};
+}
 
-startBtn.onclick = () => {
-  startBtn.classList.add("hidden");
-  game.classList.remove("hidden");
-  showQuestion();
+function explorerSentence(word, meaning){
+  // 아주 단순/안전한 문장 템플릿(중1)
+  const templates = [
+    `I ${word} after school.`,
+    `We ${word} every day.`,
+    `She wants to ${word}.`,
+    `He can ${word} well.`,
+    `They will ${word} tomorrow.`,
+    `Please ${word} this.`,
+    `I need to ${word} now.`,
+    `Do you ${word} at home?`
+  ];
+  const t = templates[Math.floor(Math.random()*templates.length)];
+  return `문장 속 밑줄 단어의 뜻은?\n\n${t.replace(word, "____")}\n(____ = ${word})`;
+}
+
+function buildQuestionBank(){
+  const bank = [];
+
+  // Rookie 40: 뜻 고르기 (영 -> 한)
+  for(let i=0;i<40;i++){
+    const [w, m] = WORDS[i];
+    const {choices, answer} = makeChoices(i, WORDS, (x)=>x[1]);
+    bank.push({
+      id: `R${String(i+1).padStart(3,"0")}`,
+      section: "ROOKIE",
+      type: "mcq",
+      prompt: `단어의 뜻을 고르세요.\n\n${w}`,
+      choices, answer,
+      meta: {word:w, meaning:m}
+    });
+  }
+
+  // Explorer 40: 문맥 의미 추론 (영 -> 한)
+  for(let i=40;i<80;i++){
+    const [w, m] = WORDS[i];
+    const {choices, answer} = makeChoices(i, WORDS, (x)=>x[1]);
+    bank.push({
+      id: `E${String(i-39).padStart(3,"0")}`,
+      section: "EXPLORER",
+      type: "mcq",
+      prompt: explorerSentence(w, m),
+      choices, answer,
+      meta: {word:w, meaning:m}
+    });
+  }
+
+  // Master 40: 단답형 (한 -> 영)
+  for(let i=80;i<120;i++){
+    const [w, m] = WORDS[i];
+    bank.push({
+      id: `M${String(i-79).padStart(3,"0")}`,
+      section: "MASTER",
+      type: "short",
+      prompt: `뜻에 맞는 영어 단어 1개를 쓰세요.\n\n${m}`,
+      answers: [w],
+      meta: {word:w, meaning:m}
+    });
+  }
+
+  return bank;
+}
+
+const BANK = buildQuestionBank();
+function getSectionQuestions(sec){ return BANK.filter(q=>q.section===sec); }
+
+/* ===============================
+   3) 상태/점수
+   =============================== */
+const state = {
+  phase: "START",
+  player: {name:"", group:""},
+  section: "ROOKIE",
+  index: 0,
+  answers: {}, // qid -> {choiceIndex} or {text}
+  unlocked: {ROOKIE:true, EXPLORER:false, MASTER:false}
 };
 
-function showQuestion(){
-  const q = questions[current];
-  questionEl.textContent = q.q;
-  choicesEl.innerHTML = "";
-  q.choices.forEach((choice,i)=>{
-    const btn = document.createElement("button");
-    btn.textContent = choice;
-    btn.onclick = ()=> checkAnswer(i);
-    choicesEl.appendChild(btn);
-  });
+function score(){
+  let total=0;
+  const by={ROOKIE:0, EXPLORER:0, MASTER:0};
+  for(const q of BANK){
+    const a = state.answers[q.id];
+    if(!a) continue;
+    let ok=false;
+    if(q.type==="mcq"){
+      ok = (a.choiceIndex===q.answer);
+    } else {
+      ok = q.answers.some(x=>norm(x)===norm(a.text));
+    }
+    if(ok){ total++; by[q.section]++; }
+  }
+  return {total, by};
 }
 
-function checkAnswer(i){
-  if(i === questions[current].answer){
-    alert("정답!");
-  } else {
-    alert("오답!");
-  }
-  current++;
-  if(current < questions.length){
-    showQuestion();
-  } else {
-    alert("게임 끝!");
-    location.reload();
-  }
+function levelFromTotal(t){
+  if(t<=50) return "ROOKIE";
+  if(t<=85) return "EXPLORER";
+  return "MASTER";
 }
+
+/* ===============================
+   4) 렌더링
+   =============================== */
+function el(tag, attrs, ...children){
+  const n=document.createElement(tag);
+  if(attrs){
+    for(const k of Object.keys(attrs)){
+      const v=attrs[k];
+      if(k==="class") n.className=v;
+      else if(k.startsWith("on") && typeof v==="function") n.addEventListener(k.slice(2).toLowerCase(), v);
+      else n.setAttribute(k, v);
+    }
+  }
+  for(const c of children){
+    if(c===null || c===undefined) continue;
+    if(typeof c==="string") n.appendChild(document.createTextNode(c));
+    else n.appendChild(c);
+  }
+  return n;
+}
+
+function sectionLabel(sec){
+  if(sec==="ROOKIE") return "🟢 ROOKIE";
+  if(sec==="EXPLORER") return "🔵 EXPLORER";
+  if(sec==="MASTER") return "🔴 MASTER";
+  return sec;
+}
+
+function renderStart(){
+  setStatus("Ready");
+  const main = el("div",{class:"card pad grow"},
+    el("div",{class:"big"},"시작하기"),
+    el("div",{class:"muted small"},"안정형 120문항(3섹션) 버전입니다. 아래 정보 입력 후 시작하세요."),
+    el("div",{class:"hr"}),
+    el("div",{},
+      el("label",{},"학생 이름(또는 닉네임)"),
+      el("input",{value:state.player.name, placeholder:"예: 1-3 김OO", oninput:(e)=>{state.player.name=e.target.value;}})
+    ),
+    el("div",{style:"height:10px"}),
+    el("div",{},
+      el("label",{},"반/학급(선택)"),
+      el("input",{value:state.player.group, placeholder:"예: 1학년 3반", oninput:(e)=>{state.player.group=e.target.value;}})
+    ),
+    el("div",{class:"hr"}),
+    el("div",{class:"row"},
+      el("button",{class:"btn primary", onclick:()=>{ state.phase="MAP"; render(); }},"🚀 게임 시작")
+    )
+  );
+
+  const sc = score();
+  const side = el("div",{class:"card pad side"},
+    el("div",{class:"big"},"현재 점수"),
+    el("div",{class:"muted small"},`총점 ${sc.total}/120`),
+    el("div",{class:"tagrow"},
+      el("span",{class:"tag"},`ROOKIE ${sc.by.ROOKIE}/40`),
+      el("span",{class:"tag"},`EXPLORER ${sc.by.EXPLORER}/40`),
+      el("span",{class:"tag"},`MASTER ${sc.by.MASTER}/40`)
+    ),
+    el("div",{class:"hr"}),
+    el("button",{class:"btn bad", onclick:()=>{ // 초기화
+      state.phase="START"; state.section="ROOKIE"; state.index=0;
+      state.answers={}; state.unlocked={ROOKIE:true,EXPLORER:false,MASTER:false};
+      render();
+    }},"🧹 초기화")
+  );
+
+  return el("div",{class:"row"}, main, side);
+}
+
+function renderMap(){
+  setStatus("Map");
+  const sc = score();
+  const main = el("div",{class:"card pad grow"},
+    el("div",{class:"big"},"Mission Map"),
+    el("div",{class:"muted small"},"통과 기준: 각 섹션 28점 이상이면 다음 섹션이 열립니다."),
+    el("div",{class:"hr"}),
+    el("div",{class:"map"},
+      node("ROOKIE","🟢 ROOKIE (1–40)","4지선다: 단어 뜻 고르기", true),
+      node("EXPLORER","🔵 EXPLORER (41–80)","4지선다: 문맥 의미 추론", state.unlocked.EXPLORER),
+      node("MASTER","🔴 MASTER (81–120)","단답형: 영어 단어 1개 쓰기", state.unlocked.MASTER)
+    ),
+    el("div",{class:"hr"}),
+    el("div",{class:"row"},
+      el("button",{class:"btn", onclick:()=>{state.phase="START"; render();}},"⬅️ 돌아가기"),
+      el("button",{class:"btn warn", onclick:()=>{state.phase="FINAL"; render();}},"📊 리포트")
+    )
+  );
+
+  const side = el("div",{class:"card pad side"},
+    el("div",{class:"big"},"점수"),
+    el("div",{class:"muted small"},`총점 ${sc.total}/120 · 레벨 ${levelFromTotal(sc.total)}`),
+    el("div",{class:"tagrow"},
+      el("span",{class:"tag"},`ROOKIE ${sc.by.ROOKIE}/40`),
+      el("span",{class:"tag"},`EXPLORER ${sc.by.EXPLORER}/40`),
+      el("span",{class:"tag"},`MASTER ${sc.by.MASTER}/40`)
+    )
+  );
+
+  return el("div",{class:"row"}, main, side);
+}
+
+function node(sec, title, desc, unlocked){
+  const box = el("div",{class:"node"+(unlocked?"":" locked")},
+    el("h3",{},title),
+    el("div",{class:"desc"},desc),
+    el("div",{class:"hr"}),
+    el("button",{class:"btn primary", onclick:()=>{
+      if(!unlocked) return;
+      state.section=sec; state.index=0; state.phase="PLAY"; render();
+    }}, unlocked ? "시작" : "잠김")
+  );
+  return box;
+}
+
+function currentQuestion(){
+  const qs = getSectionQuestions(state.section);
+  return qs[state.index] || null;
+}
+
+function renderPlay(){
+  const q = currentQuestion();
+  if(!q){ state.phase="SECTION_RESULT"; return renderSectionResult(); }
+  setStatus(sectionLabel(state.section));
+
+  const qs = getSectionQuestions(state.section);
+  const progress = Math.round((state.index/qs.length)*100);
+  const sc = score();
+
+  const main = el("div",{class:"card pad grow"},
+    el("div",{class:"hud"},
+      el("div",{},
+        el("div",{class:"muted small"},`${sectionLabel(state.section)} · 문항 ${state.index+1}/${qs.length}`),
+        el("div",{class:"meter"}, el("div",{class:"bar", style:`width:${progress}%`}))
+      ),
+      el("div",{}, el("div",{class:"muted small"},`총점 ${sc.total}/120`))
+    ),
+    el("div",{class:"qtext"}, q.prompt),
+    el("div",{class:"tagrow"},
+      el("span",{class:"tag"},`ID: ${q.id}`),
+      el("span",{class:"tag"},`Word: ${q.meta.word}`)
+    ),
+    el("div",{class:"hr"})
+  );
+
+  if(q.type==="mcq"){
+    const prev = state.answers[q.id]?.choiceIndex;
+    const btns = q.choices.map((t,i)=>{
+      const label = String.fromCharCode(65+i)+") "+t;
+      const b = el("button",{class:"btn choice"+(prev===i?" selected":""), onclick:()=>{
+        state.answers[q.id]={choiceIndex:i};
+        render();
+      }}, label);
+      return b;
+    });
+    main.appendChild(el("div",{class:"grid4"}, ...btns));
+    main.appendChild(el("div",{class:"hr"}));
+    main.appendChild(el("div",{class:"row"},
+      el("button",{class:"btn primary", onclick:()=>nextQuestion()},"다음 ▶"),
+      el("button",{class:"btn", onclick:()=>{state.phase="MAP"; render();}},"🗺️ 맵")
+    ));
+  } else {
+    const prevText = state.answers[q.id]?.text ?? "";
+    main.appendChild(el("input",{value:prevText, placeholder:"영어 단어 1개 입력", oninput:(e)=>{state.answers[q.id]={text:e.target.value};}}));
+    main.appendChild(el("div",{class:"hr"}));
+    main.appendChild(el("div",{class:"row"},
+      el("button",{class:"btn primary", onclick:()=>nextQuestion()},"다음 ▶"),
+      el("button",{class:"btn", onclick:()=>{state.phase="MAP"; render();}},"🗺️ 맵")
+    ));
+  }
+
+  const side = el("div",{class:"card pad side"},
+    el("div",{class:"big"},"도구"),
+    el("div",{class:"muted small"},"이 버전은 안정성 우선(즉시 채점 표시 없음)."),
+    el("div",{class:"hr"}),
+    el("button",{class:"btn warn", onclick:()=>{state.phase="SECTION_RESULT"; render();}},"📌 섹션 결과"),
+    el("button",{class:"btn bad", onclick:()=>{state.phase="START"; state.section="ROOKIE"; state.index=0; state.answers={}; state.unlocked={ROOKIE:true,EXPLORER:false,MASTER:false}; render();}},"🧹 초기화")
+  );
+
+  return el("div",{class:"row"}, main, side);
+}
+
+function nextQuestion(){
+  const qs = getSectionQuestions(state.section);
+  state.index = clamp(state.index+1, 0, qs.length);
+  if(state.index>=qs.length){
+    state.phase="SECTION_RESULT";
+  }
+  render();
+}
+
+function renderSectionResult(){
+  setStatus("Section Result");
+  const qs = getSectionQuestions(state.section);
+  const sc = score();
+  const secScore = sc.by[state.section];
+  const passed = secScore >= 28;
+
+  // unlock
+  if(state.section==="ROOKIE" && passed) state.unlocked.EXPLORER=true;
+  if(state.section==="EXPLORER" && passed) state.unlocked.MASTER=true;
+
+  const nextSec = state.section==="ROOKIE" ? "EXPLORER" : (state.section==="EXPLORER" ? "MASTER" : null);
+
+  const main = el("div",{class:"card pad grow"},
+    el("div",{class:"big"},`${sectionLabel(state.section)} 결과`),
+    el("div",{class:"muted small"},`점수: ${secScore}/${qs.length} · 통과 기준: 28점`),
+    el("div",{class:"hr"}),
+    el("div",{class:"tagrow"},
+      el("span",{class:"tag"}, passed ? "✅ PASS" : "⚠️ TRY AGAIN"),
+      el("span",{class:"tag"}, `총점 ${sc.total}/120 · 레벨 ${levelFromTotal(sc.total)}`)
+    ),
+    el("div",{class:"hr"}),
+    el("div",{class:"row"},
+      nextSec ? el("button",{class:"btn primary", onclick:()=>{
+        if(!passed) return;
+        state.section=nextSec; state.index=0; state.phase="PLAY"; render();
+      }}, `다음 섹션 (${sectionLabel(nextSec)})`) : null,
+      el("button",{class:"btn good", onclick:()=>{state.phase="MAP"; render();}},"🗺️ 맵"),
+      el("button",{class:"btn", onclick:()=>{state.index=0; state.phase="PLAY"; render();}},"🔁 다시 풀기"),
+      el("button",{class:"btn warn", onclick:()=>{state.phase="FINAL"; render();}},"📊 리포트")
+    )
+  );
+
+  const side = el("div",{class:"card pad side"},
+    el("div",{class:"big"},"빠른 이동"),
+    el("button",{class:"btn", onclick:()=>{state.phase="MAP"; render();}},"🗺️ 맵"),
+    el("button",{class:"btn bad", onclick:()=>{state.phase="START"; state.section="ROOKIE"; state.index=0; state.answers={}; state.unlocked={ROOKIE:true,EXPLORER:false,MASTER:false}; render();}},"🧹 초기화")
+  );
+
+  return el("div",{class:"row"}, main, side);
+}
+
+function renderFinal(){
+  setStatus("Report");
+  const sc = score();
+  const level = levelFromTotal(sc.total);
+
+  const main = el("div",{class:"card pad grow"},
+    el("div",{class:"big"},"최종 리포트"),
+    el("div",{class:"muted small"},`이름: ${state.player.name || "(미입력)"} · 반: ${state.player.group || "(미입력)"}\n총점: ${sc.total}/120 · 레벨: ${level}`),
+    el("div",{class:"hr"}),
+    el("div",{class:"tagrow"},
+      el("span",{class:"tag"},`ROOKIE ${sc.by.ROOKIE}/40`),
+      el("span",{class:"tag"},`EXPLORER ${sc.by.EXPLORER}/40`),
+      el("span",{class:"tag"},`MASTER ${sc.by.MASTER}/40`)
+    ),
+    el("div",{class:"hr"}),
+    el("div",{class:"row"},
+      el("button",{class:"btn", onclick:()=>{state.phase="MAP"; render();}},"🗺️ 맵"),
+      el("button",{class:"btn bad", onclick:()=>{state.phase="START"; state.section="ROOKIE"; state.index=0; state.answers={}; state.unlocked={ROOKIE:true,EXPLORER:false,MASTER:false}; render();}},"🧹 초기화")
+    )
+  );
+
+  const side = el("div",{class:"card pad side"},
+    el("div",{class:"big"},"다음 단계"),
+    el("div",{class:"muted small"},"여기까지가 ‘안정형 120문항’입니다.\n원하시면 다음으로 구글시트 자동 수집(반 전체 자동 저장) 기능을 ‘깨끗하게’ 붙여드립니다."),
+    el("div",{class:"hr"}),
+    el("button",{class:"btn primary", onclick:()=>{alert("다음 단계: 구글시트 자동 수집 버전으로 업그레이드 진행! (원하시면 바로 이어서 안내할게요)");}},"☁️ 자동 수집 붙이기(다음)")
+  );
+
+  return el("div",{class:"row"}, main, side);
+}
+
+function render(){
+  const root = $("app");
+  root.innerHTML="";
+  if(state.phase==="START") root.appendChild(renderStart());
+  else if(state.phase==="MAP") root.appendChild(renderMap());
+  else if(state.phase==="PLAY") root.appendChild(renderPlay());
+  else if(state.phase==="SECTION_RESULT") root.appendChild(renderSectionResult());
+  else if(state.phase==="FINAL") root.appendChild(renderFinal());
+  else { state.phase="START"; root.appendChild(renderStart()); }
+}
+
+render();
 </script>
-
 </body>
 </html>
